@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Note Finder - Tonalidade</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #e0e0e0;
+            margin: 0;
+            padding: 20px;
+        }
+        h1 {
+            text-align: center;
+        }
+        .result {
+            margin-top: 20px;
+            background-color: #1e1e1e;
+            padding: 15px;
+            border-radius: 5px;
+        }
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+        button {
+            margin: 5px;
+            padding: 10px 15px;
+            background-color: #bb86fc;
+            border: none;
+            border-radius: 5px;
+            color: #ffffff;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #9b68d8;
+        }
+    </style>
+</head>
+<body>
+
+<h1>Encontre Acordes</h1>
+<form id="form">
+    <label for="tonalidade">Insira uma tonalidade:</label>
+    <input type="text" id="tonalidade" placeholder="Ex: C, D#, A" required>
+    <button type="submit">Buscar Acordes</button>
+</form>
+
+<div class="result" id="result"></div>
+
+<div class="controls">
+    <button id="melodiaAleatoria">Gerar Melodia Aleatória</button>
+    <button id="cadenciaAleatoria">Gerar Cadência Aleatória</button>
+    <label for="subirDescer">Deseja subir ou descer a tonalidade?</label>
+    <select id="subirDescer">
+        <option value="subir">Subir</option>
+        <option value="descer">Descer</option>
+    </select>
+</div>
+
+<div class="result" id="melodiaResult"></div>
+<div class="result" id="cadenciaResult"></div>
+
+<script>
+const cromat = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+
+const acordes = function(base, indic) {
+    let resultado = "";
+    resultado += "Acorde: " + base[indic] + "<br>";
+    
+    if (indic < 7) {
+        indic += 5;
+        resultado += obterAcordesRelativos(base, indic);
+    } else {
+        indic -= 7;
+        resultado += obterAcordesRelativos(base, indic);
+    }
+
+    return resultado;
+};
+
+function obterAcordesRelativos(base, indic) {
+    let resultado = "";
+    if (indic + 2 > 11) {
+        resultado += "Acorde: " + base[indic - 10] + "<br>";
+        resultado += "Relativo: " + base[indic - 8] + "m<br>";
+    } else if (indic + 4 > 11) {
+        resultado += "Acorde: " + base[indic + 2] + "<br>";
+        resultado += "Relativo: " + base[indic - 8] + "m<br>";
+    } else {
+        resultado += "Acorde: " + base[indic + 2] + "<br>";
+        resultado += "Relativo: " + base[indic + 4] + "m<br>";
+    }
+    return resultado;
+}
+
+function campo(tom) {
+    let resultado = "";
+    for (let i = 0; i < 12; i++) {
+        if (cromat[i] === tom) {
+            resultado += "Tom: " + cromat[i] + "<br>";
+            return acordes(cromat, i);
+        }
+    }
+    resultado += "Caractere inválido.";
+    return resultado;
+}
+
+document.getElementById("form").addEventListener("submit", function(event) {
+    event.preventDefault();
+    const tonalidade = document.getElementById("tonalidade").value;
+    const resultado = campo(tonalidade);
+    document.getElementById("result").innerHTML = resultado;
+});
+
+document.getElementById("melodiaAleatoria").addEventListener("click", function() {
+    const tonalidade = document.getElementById("tonalidade").value;
+    const index = cromat.indexOf(tonalidade);
+    if (index === -1) {
+        document.getElementById("melodiaResult").innerHTML = "Tonalidade inválida!";
+        return;
+    }
+
+    const melodia = gerarMelodiaAleatoria(index);
+    document.getElementById("melodiaResult").innerHTML = "Melodia Aleatória: " + melodia.join(", ");
+});
+
+document.getElementById("cadenciaAleatoria").addEventListener("click", function() {
+    const tonalidade = document.getElementById("tonalidade").value;
+    const index = cromat.indexOf(tonalidade);
+    if (index === -1) {
+        document.getElementById("cadenciaResult").innerHTML = "Tonalidade inválida!";
+        return;
+    }
+
+    const direcao = document.getElementById("subirDescer").value;
+    const cadencia = gerarCadenciaAleatoria(index, direcao);
+    document.getElementById("cadenciaResult").innerHTML = "Cadência Aleatória: " + cadencia.join(" - ");
+});
+
+function gerarMelodiaAleatoria(baseIndex) {
+    const notasDaTonalidade = [
+        (baseIndex + 2) % 12,
+        (baseIndex + 4) % 12,
+        (baseIndex + 5) % 12,
+        (baseIndex + 7) % 12,
+        (baseIndex + 9) % 12
+    ];
+
+    const melodia = [];
+    const totalNotas = Math.floor(Math.random() * 9) + 9; // Entre 9 e 17 notas
+
+    for (let i = 0; i < totalNotas; i++) {
+        let notaIndex;
+
+        do {
+            notaIndex = Math.floor(Math.random() * notasDaTonalidade.length);
+        } while (melodia[i - 1] === cromat[notasDaTonalidade[notaIndex]] && (i === 0 || melodia[i - 2] === cromat[notasDaTonalidade[notaIndex]]));
+
+        const nota = cromat[notasDaTonalidade[notaIndex]];
+        melodia.push(nota);
+
+        // Chance de 1 em 5 para adicionar uma nota fora da tonalidade
+        if (Math.random() < 1/5) {
+            const notaForaIndex = Math.floor(Math.random() * 12);
+            melodia[i] = cromat[notaForaIndex]; // Substitui a última nota pela fora da tonalidade
+        }
+    }
+
+    return melodia;
+}
+
+function gerarCadenciaAleatoria(baseIndex, direcao) {
+    const cadencia = [];
+    const numNotas = Math.floor(Math.random() * 5) + 3; // Entre 3 e 7 notas
+
+    // Notas válidas dentro da tonalidade
+    const notasDaTonalidade = [
+        (baseIndex + 2) % 12,
+        (baseIndex + 4) % 12,
+        (baseIndex + 5) % 12,
+        (baseIndex + 7) % 12,
+        (baseIndex + 9) % 12
+    ];
+
+    for (let i = 0; i < numNotas; i++) {
+        const notaIndex = Math.floor(Math.random() * notasDaTonalidade.length);
+        cadencia.push(cromat[notasDaTonalidade[notaIndex]]);
+    }
+
+    // Determinar a última nota que pode ser fora da tonalidade ou igual ao relativo
+    let ultimaNotaIndex;
+    if (direcao === "subir") {
+        // Adicionar uma nota fora da tonalidade ou um relativo
+        const chanceRelativo = Math.random() < 1/3;
+        ultimaNotaIndex = chanceRelativo ? (baseIndex + 7) % 12 : (baseIndex + Math.floor(Math.random() * 2) + 1) % 12; // +1 ou +2
+    } else {
+        // Adicionar uma nota fora da tonalidade ou um relativo
+        const chanceRelativo = Math.random() < 1/3;
+        ultimaNotaIndex = chanceRelativo ? (baseIndex - 7 + 12) % 12 : (baseIndex - (Math.floor(Math.random() * 2) + 1) + 12) % 12; // -1 ou -2
+    }
+
+    cadencia.push(cromat[ultimaNotaIndex]);
+    return cadencia;
+}
+</script>
+
+</body>
+</html>
